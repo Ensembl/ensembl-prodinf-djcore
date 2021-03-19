@@ -13,7 +13,7 @@ from django.conf import settings
 from django.db import models
 
 if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
-    from django_mysql.models import EnumField, SizeTextField
+    from django_mysql.models import EnumField, SizedTextField
 else:
     class EnumField(models.CharField):
         def __init__(self, *args, **kwargs):
