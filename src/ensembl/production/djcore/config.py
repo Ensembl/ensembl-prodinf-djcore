@@ -25,16 +25,3 @@ def override_logentry(sender, **kwargs):
         )
         sender._meta.local_fields = [f for f in sender._meta.fields if f.name != "user"]
         user.contribute_to_class(sender, "user")
-
-
-class EnsemblProductionConfig(AppConfig):
-    name = 'ensembl_production'
-    verbose_name = "Production Team"
-
-    def ready(self):
-        """
-        Import signals
-        :return: None
-        """
-        class_prepared.connect(override_logentry)
-        pass
