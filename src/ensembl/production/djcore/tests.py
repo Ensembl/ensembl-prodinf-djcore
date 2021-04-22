@@ -12,17 +12,64 @@
 """
 Automated test - unittest
 """
+import datetime
 from django.test import TestCase
+from ensembl.production.djcore.models import BaseTimestampedModel, HasCurrent, HasDescription, NullTextField, \
+    TrimmedCharField
+from django.db import models, connection
+from django.contrib.auth import get_user_model
+import random
+import string
+
+
+class DjCoreSampleModel(BaseTimestampedModel, HasCurrent, HasDescription):
+    class Meta:
+        db_table = "sample"
+
+    foo = models.CharField("Foo Char Field", max_length=255)
+    description = models.TextField("Sample Text")
+    null = NullTextField('Null trimmed Text field')
+
 
 class TestDjCore(TestCase):
-
-    def test_alive(self):
-        """
-        Test case to ensure that the testTool works.
-        .. code-block:: none
-
-        """
-        print("I am alive")
-        assert True
-
     # TODO add more tests
+    user = None
+    user2 = None
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create(username="testuser")
+        cls.user2 = get_user_model().objects.create(username="testuser2")
+        return super().setUpTestData()
+
+    def test_timestamped(self):
+        bar = DjCoreSampleModel.objects.create(foo="has user", created_by=self.user)
+        self.assertTrue(hasattr(bar, 'created_by'))
+        self.assertEqual(bar.created_by.username, 'testuser')
+        self.assertIsNotNone(bar.created_at)
+        bar.foo = "update foobar"
+        bar.modified_by = self.user2
+        bar.save(update_fields=['foo', 'modified_by'])
+        self.assertEqual(bar.modified_by.username, 'testuser2')
+
+    def test_has_description(self):
+        bar = DjCoreSampleModel.objects.create(foo="has description", created_by=self.user)
+        bar.description = "".join([random.choice(string.ascii_lowercase) for i in range(300)])
+        self.assertEqual(len(bar.short_description), 150)
+        self.assertEqual(len(bar.description), 300)
+
+    def test_has_current(self):
+        bar = DjCoreSampleModel.objects.create(foo="has current", created_by=self.user)
+        self.assertTrue(bar.is_current)
+
+    def test_null_text(self):
+        bar = DjCoreSampleModel.objects.create(foo="null",
+                                               null="A very long text with many lines and so on")
+        self.assertEqual(bar.null, "A very long text with many lines and so on")
+        bar.null = ''
+        bar.save()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT `null` FROM sample WHERE foo = %s", [bar.foo])
+            row = cursor.fetchone()
+            self.assertEqual(None, row[0])
+        self.assertEqual(bar.null, '')

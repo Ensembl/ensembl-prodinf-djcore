@@ -17,10 +17,28 @@ from django.db import models
 from django.db.models.base import router, NOT_PROVIDED
 from django.template.defaultfilters import truncatechars
 
+def trim_carriage_return(value):
+    """
+    Remove (and trim) carriage return char from value
+    :param value:
+    :return: trimmed value
+    """
+    return value.replace("\n", " ").replace("\r", " ").replace("  ", " ")
+
+class TrimmedCharField(models.CharField):
+    description = "Field automatically replacing carriage returns by spaces"
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            return trim_carriage_return(value)
+        elif value is None:
+            return value
+        return trim_carriage_return(str(value))
+
 
 class NullTextField(models.TextField):
     empty_strings_allowed = False
-    description = "Set Textfield to NULL instead of empty string"
+    description = "Null value when empty string"
 
     def __init__(self, *args, **kwargs):
         kwargs['null'] = True
@@ -28,7 +46,21 @@ class NullTextField(models.TextField):
         super(NullTextField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
-        return None if value == '' else value
+        if isinstance(value, models.CharField):
+            return value
+        if value == None:
+            return ""
+        else:
+            return value # otherwise, return just the value
+
+    def get_db_prep_value(self, value, connection, prepared=False):
+        print("value is [%s]" % value)
+        if not value:
+            # if Django tries to save an empty string, send to db None (NULL)
+            return None
+        else:
+            return value # otherwise, just pass the value
+        return super().get_db_prep_value(value, connection, prepared)
 
     def get_internal_type(self):
         return "TextField"
@@ -99,7 +131,7 @@ class BaseTimestampedModel(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ['-updated', '-created']
+        ordering = ['-modified_at', '-created_at']
 
     #: created by user (external DB ID)
     created_by = SpanningForeignKey(get_user_model(), db_column='created_by', blank=True, null=True,
@@ -122,7 +154,11 @@ class HasCurrent(models.Model):
 
 
 class HasDescription:
+    field_desc = 'description'
 
     @property
     def short_description(self):
-        return truncatechars(self.description, 150)
+        if hasattr(self, self.field_desc):
+            return truncatechars(getattr(self, self.field_desc, ''), 150)
+        else:
+            return ''

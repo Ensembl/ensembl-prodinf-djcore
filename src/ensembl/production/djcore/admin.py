@@ -21,11 +21,6 @@ class ProductionUserAdminMixin(admin.ModelAdmin):
     """
     readonly_fields = ('created_by', 'created_at', 'modified_by', 'modified_at')
 
-    class Media:
-        css = {
-            'all': ('css/production_admin.css',)
-        }
-
     def save_model(self, request, obj, form, change):
         if change:
             if form.changed_data:
