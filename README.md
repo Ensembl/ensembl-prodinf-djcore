@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/Ensembl/ensembl-prodinf-djcore.svg?branch=main)](https://travis-ci.com/Ensembl/ensembl-prodinf-djcore)
+
 # ensembl-prodinf-djcore
 
 This repository contains a set of useful core Django functionalities that may be extended in other pass included in current Ensembl Production Services portal - avoiding circular references for the most part.
@@ -20,4 +22,10 @@ INSTALL
     ```
    
     pip install -e https://github.com/Ensembl/ensembl-prodinf-djcore#egg=ensembl-prodinf-djcore
+
+
+Usage in Django App
+===================
+
+No need to add the package to the INSTALLED_APPS. But can be as well.
 
