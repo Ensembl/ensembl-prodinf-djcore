@@ -25,6 +25,7 @@ class DjCoreSampleModel(BaseTimestampedModel, HasCurrent, HasDescription):
     foo = models.CharField("Foo Char Field", max_length=255)
     description = models.TextField("Sample Text")
     null_field = NullTextField('Null trimmed Text field')
+    trimmed_null_field = NullTextField('Null trimmed Text field', trim_cr=True)
     carriage = TrimmedCharField("Carriage", max_length=200)
 
 
@@ -71,8 +72,19 @@ class TestDjCore(TestCase):
             self.assertEqual(None, row[0])
         self.assertEqual(bar.null_field, '')
 
-    def test_carriage_return(self):
+    def test_trimmed_field(self):
         DjCoreSampleModel.objects.create(foo="carriage",
                                          carriage="A long \r\ntext with \nsome new \n\nlines \rand carriage return")
         bar = DjCoreSampleModel.objects.get(foo="carriage")
         self.assertEqual(bar.carriage, "A long text with some new lines and carriage return")
+
+    def test_trimmed_null_text_field(self):
+        DjCoreSampleModel.objects.create(foo="carriage",
+                                         null_field="A long \r\ntext with \nsome new \n\nlines \rand "
+                                                    "carriage return",
+                                         trimmed_null_field="A long \r\ntext with \nsome new \n\nlines \rand "
+                                                            "carriage return")
+        bar = DjCoreSampleModel.objects.get(foo="carriage")
+        self.assertEqual(bar.trimmed_null_field, "A long text with some new lines and carriage return")
+        self.assertEqual(bar.null_field, "A long \r\ntext with \nsome new \n\nlines \rand "
+                                         "carriage return")

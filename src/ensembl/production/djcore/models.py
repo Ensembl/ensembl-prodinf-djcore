@@ -43,25 +43,24 @@ class NullTextField(models.TextField):
     def __init__(self, *args, **kwargs):
         kwargs['null'] = True
         kwargs['blank'] = True
+        self.trim_cr = kwargs.pop('trim_cr', False)
         super(NullTextField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
         if isinstance(value, models.CharField):
-            return value
+            return value if not self.trim_cr else trim_carriage_return(value)
         if value is None:
             return ""
         else:
-            return value  # otherwise, return just the value
+            return value if not self.trim_cr else trim_carriage_return(value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
         if not value:
             # if Django tries to save an empty string, send to db None (NULL)
             return None
         else:
+            value = value if not self.trim_cr else trim_carriage_return(value)
             return super().get_db_prep_value(value, connection, prepared)  # otherwise, just pass the value
-
-    def get_internal_type(self):
-        return "TextField"
 
 
 class SpanningForeignKey(models.ForeignKey):
