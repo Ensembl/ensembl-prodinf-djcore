@@ -9,6 +9,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import collections
 import re
 
 
@@ -21,3 +22,13 @@ def trim_carriage_return(value):
     t = str.maketrans("\n\r", "  ")
     f_value = value.translate(t)
     return re.sub(' +', ' ', f_value)
+
+
+def flatten(iter_obj):
+    result = []
+    for el in iter_obj:
+        if isinstance(iter_obj, collections.Iterable) and not isinstance(el, str):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
