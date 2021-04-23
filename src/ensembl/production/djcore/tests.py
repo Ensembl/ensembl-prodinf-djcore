@@ -9,10 +9,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-"""
-Automated test - unittest
-"""
-import datetime
 from django.test import TestCase
 from ensembl.production.djcore.models import BaseTimestampedModel, HasCurrent, HasDescription, NullTextField, \
     TrimmedCharField
@@ -28,7 +24,8 @@ class DjCoreSampleModel(BaseTimestampedModel, HasCurrent, HasDescription):
 
     foo = models.CharField("Foo Char Field", max_length=255)
     description = models.TextField("Sample Text")
-    null = NullTextField('Null trimmed Text field')
+    null_field = NullTextField('Null trimmed Text field')
+    carriage = TrimmedCharField("Carriage", max_length=200)
 
 
 class TestDjCore(TestCase):
@@ -64,12 +61,18 @@ class TestDjCore(TestCase):
 
     def test_null_text(self):
         bar = DjCoreSampleModel.objects.create(foo="null",
-                                               null="A very long text with many lines and so on")
-        self.assertEqual(bar.null, "A very long text with many lines and so on")
-        bar.null = ''
+                                               null_field="A very long text with many lines and so on")
+        self.assertEqual(bar.null_field, "A very long text with many lines and so on")
+        bar.null_field = ''
         bar.save()
         with connection.cursor() as cursor:
-            cursor.execute("SELECT `null` FROM sample WHERE foo = %s", [bar.foo])
+            cursor.execute("SELECT null_field FROM sample WHERE foo = %s", [bar.foo])
             row = cursor.fetchone()
             self.assertEqual(None, row[0])
-        self.assertEqual(bar.null, '')
+        self.assertEqual(bar.null_field, '')
+
+    def test_carriage_return(self):
+        DjCoreSampleModel.objects.create(foo="carriage",
+                                         carriage="A long \r\ntext with \nsome new \n\nlines \rand carriage return")
+        bar = DjCoreSampleModel.objects.get(foo="carriage")
+        self.assertEqual(bar.carriage, "A long text with some new lines and carriage return")

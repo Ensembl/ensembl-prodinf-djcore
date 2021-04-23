@@ -16,14 +16,8 @@ from django.core import exceptions
 from django.db import models
 from django.db.models.base import router, NOT_PROVIDED
 from django.template.defaultfilters import truncatechars
+from ensembl.production.djcore.utils import trim_carriage_return
 
-def trim_carriage_return(value):
-    """
-    Remove (and trim) carriage return char from value
-    :param value:
-    :return: trimmed value
-    """
-    return value.replace("\n", " ").replace("\r", " ").replace("  ", " ")
 
 class TrimmedCharField(models.CharField):
     description = "Field automatically replacing carriage returns by spaces"
@@ -31,9 +25,15 @@ class TrimmedCharField(models.CharField):
     def to_python(self, value):
         if isinstance(value, str):
             return trim_carriage_return(value)
-        elif value is None:
-            return value
         return trim_carriage_return(str(value))
+
+    def get_db_prep_value(self, value, connection, prepared=False):
+        if not value:
+            # if Django tries to save an empty string, send to db None (NULL)
+            return super().get_db_prep_value(value, connection, prepared)
+        else:
+            t_value = trim_carriage_return(value)
+            return t_value
 
 
 class NullTextField(models.TextField):
@@ -48,19 +48,17 @@ class NullTextField(models.TextField):
     def to_python(self, value):
         if isinstance(value, models.CharField):
             return value
-        if value == None:
+        if value is None:
             return ""
         else:
-            return value # otherwise, return just the value
+            return value  # otherwise, return just the value
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        print("value is [%s]" % value)
         if not value:
             # if Django tries to save an empty string, send to db None (NULL)
             return None
         else:
-            return value # otherwise, just pass the value
-        return super().get_db_prep_value(value, connection, prepared)
+            return super().get_db_prep_value(value, connection, prepared)  # otherwise, just pass the value
 
     def get_internal_type(self):
         return "TextField"
