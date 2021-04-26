@@ -23,17 +23,16 @@ class TrimmedCharField(models.CharField):
     description = "Field automatically replacing carriage returns by spaces"
 
     def to_python(self, value):
-        if isinstance(value, str):
-            return trim_carriage_return(value)
         return trim_carriage_return(str(value))
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        if not value:
+        if value is None:
             # if Django tries to save an empty string, send to db None (NULL)
-            return super().get_db_prep_value(value, connection, prepared)
+            return value
+        elif not value:
+            super().get_db_prep_value(value, connection, prepared)
         else:
-            t_value = trim_carriage_return(value)
-            return t_value
+            return trim_carriage_return(value)
 
 
 class NullTextField(models.TextField):
@@ -47,8 +46,6 @@ class NullTextField(models.TextField):
         super().__init__(*args, **kwargs)
 
     def to_python(self, value):
-        if isinstance(value, models.CharField):
-            return value if not self.trim_cr else trim_carriage_return(value)
         if value is None:
             return ""
         else:
