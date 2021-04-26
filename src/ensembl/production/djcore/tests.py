@@ -22,11 +22,11 @@ class DjCoreSampleModel(BaseTimestampedModel, HasCurrent, HasDescription):
     class Meta:
         db_table = "sample"
 
-    foo = models.CharField("Foo Char Field", max_length=255)
-    description = models.TextField("Sample Text")
-    null_field = NullTextField('Null trimmed Text field')
-    trimmed_null_field = NullTextField('Null trimmed Text field', trim_cr=True)
-    carriage = TrimmedCharField("Carriage", max_length=200)
+    foo = models.CharField("Foo Char Field", max_length=255, null=True)
+    description = models.TextField("Sample Text", null=True)
+    null_field = NullTextField('Null trimmed Text field', null=True)
+    trimmed_null_field = NullTextField('Null trimmed Text field', trim_cr=True, null=True)
+    carriage = TrimmedCharField("Carriage", max_length=200, null=True)
 
 
 class TestDjCore(TestCase):
