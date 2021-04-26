@@ -19,9 +19,7 @@ def trim_carriage_return(value):
     :param value:
     :return: trimmed value
     """
-    t = str.maketrans("\n\r", "  ")
-    f_value = value.translate(t)
-    return re.sub(' +', ' ', f_value)
+    return re.sub(r'[\n\r]+', ' ', value)
 
 
 def flatten(iter_obj):
