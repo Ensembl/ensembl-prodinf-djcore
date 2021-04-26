@@ -44,7 +44,7 @@ class NullTextField(models.TextField):
         kwargs['null'] = True
         kwargs['blank'] = True
         self.trim_cr = kwargs.pop('trim_cr', False)
-        super(NullTextField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def to_python(self, value):
         if isinstance(value, models.CharField):
