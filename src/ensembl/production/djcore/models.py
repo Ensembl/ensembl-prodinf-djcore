@@ -16,24 +16,23 @@ from django.core import exceptions
 from django.db import models
 from django.db.models.base import router, NOT_PROVIDED
 from django.template.defaultfilters import truncatechars
+from ensembl.production.djcore.utils import trim_carriage_return
 
-def trim_carriage_return(value):
-    """
-    Remove (and trim) carriage return char from value
-    :param value:
-    :return: trimmed value
-    """
-    return value.replace("\n", " ").replace("\r", " ").replace("  ", " ")
 
 class TrimmedCharField(models.CharField):
     description = "Field automatically replacing carriage returns by spaces"
 
     def to_python(self, value):
-        if isinstance(value, str):
-            return trim_carriage_return(value)
-        elif value is None:
-            return value
         return trim_carriage_return(str(value))
+
+    def get_db_prep_value(self, value, connection, prepared=False):
+        if value is None:
+            # if Django tries to save an empty string, send to db None (NULL)
+            return value
+        elif not value:
+            super().get_db_prep_value(value, connection, prepared)
+        else:
+            return trim_carriage_return(value)
 
 
 class NullTextField(models.TextField):
@@ -43,27 +42,22 @@ class NullTextField(models.TextField):
     def __init__(self, *args, **kwargs):
         kwargs['null'] = True
         kwargs['blank'] = True
-        super(NullTextField, self).__init__(*args, **kwargs)
+        self.trim_cr = kwargs.pop('trim_cr', False)
+        super().__init__(*args, **kwargs)
 
     def to_python(self, value):
-        if isinstance(value, models.CharField):
-            return value
-        if value == None:
+        if value is None:
             return ""
         else:
-            return value # otherwise, return just the value
+            return value if not self.trim_cr else trim_carriage_return(value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        print("value is [%s]" % value)
         if not value:
             # if Django tries to save an empty string, send to db None (NULL)
             return None
         else:
-            return value # otherwise, just pass the value
-        return super().get_db_prep_value(value, connection, prepared)
-
-    def get_internal_type(self):
-        return "TextField"
+            value = value if not self.trim_cr else trim_carriage_return(value)
+            return super().get_db_prep_value(value, connection, prepared)  # otherwise, just pass the value
 
 
 class SpanningForeignKey(models.ForeignKey):
