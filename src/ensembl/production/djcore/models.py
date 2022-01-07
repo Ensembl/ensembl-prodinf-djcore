@@ -14,8 +14,9 @@
 from django.contrib.auth import get_user_model
 from django.core import exceptions
 from django.db import models
-from django.db.models.base import router, NOT_PROVIDED
+from django.db.models.base import router, NOT_PROVIDED, ModelState
 from django.template.defaultfilters import truncatechars
+
 from ensembl.production.djcore.utils import trim_carriage_return
 
 
@@ -156,3 +157,21 @@ class HasDescription:
             return truncatechars(getattr(self, self.field_desc, ''), 150)
         else:
             return ''
+
+
+class FakeModel(models.Model):
+    """
+        FakeModel - Base class for all fake model.
+    """
+
+    class Meta:
+        abstract = True
+
+    def __init__(self, *args, **kwargs):
+        # Alias some things as locals to avoid repeat global lookups
+        cls = self.__class__
+        opts = self._meta
+
+        # Set up the storage for instance state
+        self._state = ModelState()
+        #super().__init__()
