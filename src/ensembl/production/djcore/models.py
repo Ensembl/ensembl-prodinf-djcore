@@ -128,12 +128,12 @@ class BaseTimestampedModel(models.Model):
         ordering = ['-modified_at', '-created_at']
 
     #: created by user (external DB ID)
-    created_by = SpanningForeignKey(get_user_model(), db_column='created_by', blank=True, null=True,
+    created_by = SpanningForeignKey(get_user_model(), verbose_name="Created By", db_column='created_by', blank=True, null=True,
                                     related_name="%(class)s_created_by",
                                     related_query_name="%(class)s_creates")
     created_at = models.DateTimeField('Created on', auto_now_add=True, editable=False, null=True)
     #: Modified by user (external DB ID)
-    modified_by = SpanningForeignKey(get_user_model(), db_column='modified_by', blank=True, null=True,
+    modified_by = SpanningForeignKey(get_user_model(), verbose_name="Modified By", db_column='modified_by', blank=True, null=True,
                                      related_name="%(class)s_modified_by",
                                      related_query_name="%(class)s_updates")
     #: (auto_now): set each time model object is saved in database
